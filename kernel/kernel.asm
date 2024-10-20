@@ -1,19 +1,21 @@
-org 0xc200
+;org 0xc200
+;org 0x3500
 jmp near start
 ;testmsg db "hello world",'$'
 inputdup db "                                               "
-welcomemsg db "Welcome to Embedded OS v0.01:Alpha 1",0dh,0ah,'$'
-prompt db ">>>",'$'
-unknownmsg db "Unknown command",0dh,0ah,'$'
-vercmdmsg db "v0.01:Alpha 1",0dh,0ah,'$'
+welcomemsg db "Welcome to Embedded OS v0.01:Alpha 1",0dh,0ah,0
+prompt db ">>>",0
+unknownmsg db "Unknown command",0dh,0ah,0
+vercmdmsg db "v0.01:Alpha 1",0dh,0ah,0
 
 vercom db "ver"
 clscom db "cls"
 start:
-	mov ax,0
+	mov ax,cs
 	mov ds,ax
 	mov es,ax
-	mov sp,0xc200
+	mov ss,ax
+	mov sp,0x3500
 	
 	mov si,welcomemsg
 	call print
@@ -62,7 +64,7 @@ usrinput:
 	jmp putstart
 print:
 	mov al,[si]
-	cmp al,'$' 
+	cmp al,0
 	je .end
 	mov ah,0eh
 	int 10h
