@@ -3,7 +3,7 @@
 jmp near start
 ;testmsg db "hello world",'$'
 inputdup times 128 db 0
-welcomemsg db "Welcome to Embedded OS v0.01:Alpha 1",0dh,0ah,0
+welcomemsg db "Welcome to Embedded OS v0.2",0dh,0ah,0
 prompt db ">>>",0
 unknownmsg db "Unknown command",0dh,0ah,0
 vercmdmsg db "v0.1",0dh,0ah,0
