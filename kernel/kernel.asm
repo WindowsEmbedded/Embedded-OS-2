@@ -11,6 +11,8 @@ vercmdmsg db "v0.1",0dh,0ah,0
 vercom db "ver"
 clscom db "cls"
 echocom db "echo"
+shutdowncom db "shutdown"
+rebootcom db "reboot" 
 start:
 	mov ax,cs
 	mov ds,ax
@@ -112,10 +114,32 @@ cmdswitch:
 	mov ah,[echocom+si]
 	mov al,[inputdup+si]
 	cmp al,ah
-	jne .unknowncmd
+	jne .nextcom4
 	inc si
 	loop .nextcom3s
 	jmp .echo
+.nextcom4:
+	mov si,0
+	mov cx,8
+.nextcom4s:
+	mov ah,[shutdowncom+si]
+	mov al,[inputdup+si]
+	cmp al,ah
+	jne .nextcom5
+	inc si
+	loop .nextcom4s
+	jmp .shutdown
+.nextcom5:
+	mov si,0
+	mov cx,6
+.nextcom5s:
+	mov ah,[rebootcom+si]
+	mov al,[inputdup+si]
+	cmp al,ah
+	jne .unknowncmd
+	inc si
+	loop .nextcom5s
+	jmp 0ffffh:0000h ;回到bios
 .unknowncmd:
 	call newline
 	mov si,unknownmsg
@@ -145,6 +169,20 @@ cmdswitch:
 .echo.end:
 	call newline
 	jmp .dealover
+.shutdown: ;关机
+	mov ax,5301h
+	xor bx,bx
+	int 15h
+	
+	mov ax,530eh
+	mov cx,0102h
+	int 15h
+	mov ax,5307h
+	mov bl,01h
+	mov cx,0003h
+	int 15h
+	
+	ret
 .dealover:
 	mov si,0
 	;mov byte[inputdup],"                                              "

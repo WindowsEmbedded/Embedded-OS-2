@@ -4,7 +4,7 @@ jmp near start
 
 kernelbin db "KERNEL  BIN"
 msg       db 0dh,0ah,"ERR:Couldn't find kernel.bin",0
-startmsg  db 0dh,0ah,"Starting EmbeddedOS...",0
+startmsg  db 0dh,0ah,"Starting EmbeddedOS...",0dh,0ah,0
 kernelseg equ 0x3500
 
 start:
