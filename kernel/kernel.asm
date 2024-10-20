@@ -2,14 +2,15 @@
 ;org 0x3500
 jmp near start
 ;testmsg db "hello world",'$'
-inputdup db "                                               "
+inputdup times 128 db 0
 welcomemsg db "Welcome to Embedded OS v0.01:Alpha 1",0dh,0ah,0
 prompt db ">>>",0
 unknownmsg db "Unknown command",0dh,0ah,0
-vercmdmsg db "v0.01:Alpha 1",0dh,0ah,0
+vercmdmsg db "v0.1",0dh,0ah,0
 
 vercom db "ver"
 clscom db "cls"
+echocom db "echo"
 start:
 	mov ax,cs
 	mov ds,ax
@@ -58,6 +59,7 @@ usrinput:
 	cmp byte[inputdup],"                                               " ;判断是否输入
 	je .noneinput
 	call cmdswitch
+	;call cleandup
 	jmp putstart
 .noneinput:
 	call newline
@@ -99,10 +101,21 @@ cmdswitch:
 	mov ah,[clscom+si]
 	mov al,[inputdup+si]
 	cmp al,ah
-	jne .unknowncmd
+	jne .nextcom3
 	inc si
 	loop .nextcom2s
-	jmp .cls
+	jmp .echo
+.nextcom3:
+	mov si,0
+	mov cx,4
+.nextcom3s:
+	mov ah,[echocom+si]
+	mov al,[inputdup+si]
+	cmp al,ah
+	jne .unknowncmd
+	inc si
+	loop .nextcom3s
+	jmp .echo
 .unknowncmd:
 	call newline
 	mov si,unknownmsg
@@ -118,9 +131,35 @@ cmdswitch:
 	mov al,03h
 	int 10h
 	jmp .dealover
+.echo:
+	call newline
+	mov di,5 ;echo加上空格占5字节
+.echo.try:
+	mov al,[inputdup+di]
+	cmp al,0
+	je .echo.end
+	mov ah,0eh
+	int 10h
+	inc di
+	jmp .echo.try
+.echo.end:
+	call newline
+	jmp .dealover
 .dealover:
 	mov si,0
-	mov byte[inputdup],"                                              "
+	;mov byte[inputdup],"                                              "
+	call cleandup
 .end:
 	ret
-	
+
+cleandup: ;清空缓冲
+	push si
+.loop:
+	cmp si,128
+	je .end
+	mov byte[inputdup+si],0
+	inc si
+	jmp .loop
+.end:
+	pop si
+	ret
