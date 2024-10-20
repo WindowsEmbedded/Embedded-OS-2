@@ -56,7 +56,7 @@ usrinput:
 	jmp usrinput
 	
 .over:
-	cmp byte[inputdup],"                                               " ;判断是否输入
+	cmp byte[inputdup],0 ;判断是否输入
 	je .noneinput
 	call cmdswitch
 	;call cleandup
