@@ -1,18 +1,25 @@
 ;org 0xc200
 ;org 0x3500
+bootinfo equ 7e0h
 jmp near start
 ;testmsg db "hello world",'$'
 inputdup times 128 db 0
 welcomemsg db "Welcome to Embedded OS v0.1",0dh,0ah,0
-prompt db ">>>",0
+prompt db 'X>',0
 unknownmsg db "Unknown command",0dh,0ah,0
 vercmdmsg db "v0.1",0dh,0ah,0
+dirmsg db 'Directory of  :\ ',0dh,0ah,0
+isdir db '<DIR>',0
+
+drivetmp dw 0
+fileinfoseg db 0ah,60h
 
 vercom db "ver"
 clscom db "cls"
 echocom db "echo"
 shutdowncom db "shutdown"
 rebootcom db "reboot" 
+dircom db "dir"
 start:
 	mov ax,cs
 	mov ds,ax
@@ -22,6 +29,15 @@ start:
 	
 	mov si,welcomemsg
 	call print
+	
+	mov ax,bootinfo
+	mov es,ax
+	mov al,[es:0]
+	mov [drivetmp],al
+	mov [prompt],al
+	mov al,[es:1]
+	mov [drivetmp+1],al
+	
 putstart:	
 	call newline
 	mov si,prompt
@@ -136,10 +152,21 @@ cmdswitch:
 	mov ah,[rebootcom+si]
 	mov al,[inputdup+si]
 	cmp al,ah
-	jne .unknowncmd
+	jne .nextcom6
 	inc si
 	loop .nextcom5s
 	jmp 0ffffh:0000h ;回到bios
+.nextcom6:
+	mov si,0
+	mov cx,3
+.nextcom6s:
+	mov ah,[dircom+si]
+	mov al,[inputdup+si]
+	cmp al,ah
+	jne .unknowncmd
+	inc si
+	loop .nextcom6s
+	jmp .dir
 .unknowncmd:
 	call newline
 	mov si,unknownmsg
@@ -183,6 +210,46 @@ cmdswitch:
 	int 15h
 	
 	ret
+.dir: 
+	call newline
+	mov al,[drivetmp]
+	mov byte[dirmsg+13],al
+	mov si,dirmsg
+	call print
+	call newline
+	mov ah,[fileinfoseg]
+	mov al,[fileinfoseg+1]
+	mov es,ax
+	mov si,0
+.dir.try:
+	mov cx,12
+	call newline
+.dir.put:
+	mov al,[es:si]
+	cmp al,10h
+	je .dir.dir ;是文件夹
+	mov ah,0eh
+	int 10h
+	inc si
+	loop .dir.put
+.dir.lop:
+	mov ax,es
+	add ax,2h
+	mov es,ax
+	mov si,0
+	mov al,[es:si]
+	cmp al,0
+	je .dir.end
+	cmp al,0xe5 ;如果文件已被删除
+	je .dir.lop
+	jmp .dir.try
+.dir.dir:
+	mov si,isdir
+	call print
+	jmp .dir.lop
+.dir.end:
+	call newline
+	jmp .dealover
 .dealover:
 	mov si,0
 	;mov byte[inputdup],"                                              "
