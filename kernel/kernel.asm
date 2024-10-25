@@ -4,10 +4,10 @@ bootinfo equ 7e0h
 jmp near start
 ;testmsg db "hello world",'$'
 inputdup times 128 db 0
-welcomemsg db "Welcome to Embedded OS v0.1",0dh,0ah,0
+welcomemsg db "Welcome to Embedded OS v1",0dh,0ah,0
 prompt db 'X>',0
 unknownmsg db "Unknown command",0dh,0ah,0
-vercmdmsg db "v0.1",0dh,0ah,0
+vercmdmsg db "v1.0.35",0dh,0ah,0
 dirmsg db 'Directory of  :\ ',0dh,0ah,0
 isdir db '<DIR>',0
 

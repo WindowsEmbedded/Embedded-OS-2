@@ -30,7 +30,7 @@ nop
   db    0x29              
   dd    0xffffffff        
   db    "EMBEDDEDDOS"     
-  db    "FAT12   "        
+  db    "FAT16   "        
   resb  18                
 
 

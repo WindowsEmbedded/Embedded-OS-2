@@ -1,34 +1,44 @@
 #Embedded OS
 #Makefile
 #
-#Copyright (c) EmbedSys & WindowsEmbedded.
+#Copyright (c) WindowsEmbedded 2022~2024
 TOOLPATH = ./tools/
 KRNPATH = ./kernel/
 BUILDPATH = ./build/
 IMGPATH = ./images/
 
-NASM = $(TOOLPATH)nasm.exe
-MAKE = $(TOOLPATH)make.exe -r
-EDIMG = $(TOOLPATH)edimg.exe
-DEL = del
+NASM = nasm
+MAKE = make -r
+EDIMG = qemu-img
+DEL = rm
 #QEMU = $(TOOLPATH)QEMU/qemu-system-i386.exe
 QEMU = qemu-system-i386.exe
 
+IMG = $(IMGPATH)target.img
+OBJ = $(BUILDPATH)boot.bin $(BUILDPATH)loader.bin $(BUILDPATH)kernel.bin
+.PHONY:build
+
 default:
-	$(MAKE) compile
+	$(MAKE) $(IMG)
+
+makeimg:
+	$(EDIMG) create $(IMG) 1474560
+	mformat -f 1440 -B $(BUILDPATH)boot.bin -i $(IMG)
+
+$(IMG):$(OBJ) Makefile
+	$(MAKE) makeimg
+	mcopy -i $(IMG) $(BUILDPATH)loader.bin ::
+	mcopy -i $(IMG) $(BUILDPATH)kernel.bin ::
+
+$(BUILDPATH)%.bin:$(KRNPATH)%.asm Makefile
+	$(NASM) $< -o $@
+
 build: 
 	mkdir build
-compile:
-	$(NASM) $(KRNPATH)boot.asm -o $(BUILDPATH)boot.bin
-	$(NASM) $(KRNPATH)loader.asm -o $(BUILDPATH)loader.bin
-	$(NASM) $(KRNPATH)kernel.asm -o $(BUILDPATH)kernel.bin
-	$(EDIMG) imgin:$(TOOLPATH)fdimg0at.tek \
-		wbinimg src:$(BUILDPATH)boot.bin len:1024 from:0 to:0 \
-		copy from:$(BUILDPATH)loader.bin to:@: \
-		copy from:$(BUILDPATH)kernel.bin to:@: \
-		imgout:$(IMGPATH)target.img
+
 clean:
-	$(DEL) .\build\*.bin
+	$(DEL) $(OBJ)
+	$(DEL) $(IMG)
 run:
-	$(MAKE) compile
+	$(MAKE) $(IMG)
 	$(QEMU) -fda $(IMGPATH)target.img
