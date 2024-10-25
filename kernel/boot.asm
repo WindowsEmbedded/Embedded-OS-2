@@ -4,6 +4,7 @@ numsector equ 18 ;最大扇区
 numheader equ 1  ;最大磁头
 numcylind equ 10 ;最大柱面
 bootseg equ 7c0h
+bootinfoseg equ 7e0h ;boot信息地址
 dataseg	equ			800h		; 软盘10扇区读入的地址          
 
 ;  org   0x7c00            
@@ -29,7 +30,7 @@ nop
   db    0x29              
   dd    0xffffffff        
   db    "EMBEDDEDDOS"     
-  db    "FAT12   "        
+  db    "FAT16   "        
   resb  18                
 
 
@@ -39,10 +40,17 @@ entry:
 	mov	ds,ax
 	mov	ax,dataseg
 	mov	es,ax
+	
+	
 	;mov si,testmsg
 ;	call print
 	call floppyload
 	call findloader
+	
+	mov ax,bootinfoseg
+	mov es,ax
+	mov byte[es:0],'A' ;A盘
+	mov byte[es:1],0x00 ;驱动器号
 
 	jmp far [loaderseg] ;跳转到loader
 floppyload: ;读软盘
