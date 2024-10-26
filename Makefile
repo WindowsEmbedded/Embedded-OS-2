@@ -16,14 +16,15 @@ QEMU = qemu-system-i386.exe
 
 IMG = $(IMGPATH)target.img
 OBJ = $(BUILDPATH)boot.bin $(BUILDPATH)loader.bin $(BUILDPATH)kernel.bin
-.PHONY:build
+.PHONY:build clean run 
 
 default:
 	$(MAKE) $(IMG)
 
 makeimg:
 	$(EDIMG) create $(IMG) 1474560
-	mformat -f 1440 -B $(BUILDPATH)boot.bin -i $(IMG)
+	mformat -f 1440 -i $(IMG)
+	dd if=$(BUILDPATH)boot.bin of=$(IMG) bs=512 count=1  conv=notrunc
 
 $(IMG):$(OBJ) Makefile
 	$(MAKE) makeimg
@@ -41,4 +42,4 @@ clean:
 	$(DEL) $(IMG)
 run:
 	$(MAKE) $(IMG)
-	$(QEMU) -fda $(IMGPATH)target.img
+	$(QEMU) -fda $(IMGPATH)target.img -m 512

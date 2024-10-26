@@ -1,75 +1,87 @@
 ;loader.asm
-;org 0xc200
-jmp near start  
+;org 0x3500
+jmp  near start  
 
-kernelbin db "KERNEL  BIN"
-msg       db 0dh,0ah,"ERR:Couldn't find kernel.bin",0
+;kernelbin db "KERNEL  BIN"
+;msg       db 0dh,0ah,"ERR:Couldn't find kernel.bin",0
 startmsg  db 0dh,0ah,"Starting EmbeddedOS...",0dh,0ah,0
-kernelseg equ 0x3500
+;kernelseg equ 0x3500
+loaderseg db 0,0,0,0
+[section .gdt]
+;定义gdt描述符
+gdt_start:
+
+gdt_null:               ; the mandatory null descriptor
+  dd 0x00               
+  dd 0x00   
+
+gdt_code:               ;   the code segment descriptor
+  dw 0xfff              
+  dw 0x0                
+  db 0x00               
+  db 10011010b          
+  db 11001111b          
+  db 0x0                
+
+gdt_data:               ; the data segment descriptor
+  dw 0xfff              ; Limit (bits 0-15)
+  dw 0x0                ; Base  (bits 0-15)
+  db 0x00               ; Base  (bits 16-23)
+  db 10010010b          ; 1st flags, type flags
+  db 11001111b          ; 2nd flags, Limit(bits 16-19)
+  db 0x0                ; Base (bits 24-31)
+
+gdt_end:                
+                    
+; GDT descriptor
+gdt_descriptor:
+  dw gdt_end -gdt_start -1    ; Size of our GDT, always less one of the true size
+  dd gdt_start                ; Start address of our GDT
+
+CODE_SEG equ gdt_code - gdt_start
+DATA_SEG equ gdt_data - gdt_start
+	
+	
+
+
+;ards_buf times 244 db 0
+;ards_nr dw 0
+[section .text]
+;[bits 16]
+
+
 
 start:
     mov ax,cs 
+	;mov byte[loaderseg+2],al
+	;mov byte[loaderseg+3],ah
     mov ds,ax
     mov es,ax
 	
 	mov si,startmsg
 	call print
 
-    mov si,kernelbin
-    call findkrn
-    cmp ah,0 ;AH=0没找到文件
-    jne jmpkrn
+.enterprotectmode: ;进入保护模式
+    ;1 开启a20gate
+    in al,0x92
+    or al,0000_0010b
+    out 0x92,al
 
-    mov si,msg
-    call print 
-    jmp $
-findkrn: ;寻找kernel.bin
-    mov ax,0a60h
-    mov es,ax
-    sub di,di ;清空di
-    mov cx,11
-.loop:
-    mov ah,[si]
-    mov al,[es:di]
-    cmp ah,al
-    jne .next
-    inc si
-    inc di
-    loop .loop
-    mov ah,1 ;AH=1找到文件
-    ret
-.next:
-    mov ax,es
-    add ax,2h
-    mov es,ax
-    sub di,di
-    mov al,[es:di]
-    cmp al,0
-    je .end
-    mov cx,11 ;再找一次
-    jmp .loop
-.end:
-    mov ah,0
-    ret
-jmpkrn:
-    mov ax,es
-    add ax,1h 
-    mov es,ax
-    mov cx,[es:10]
-    mov ax,0
-.mul:
-    add ax,20h
-    loop .mul
-    add ax,0be0h
+    ;2.禁用中断
+    cli
+    
+	;3. 加载gdt并进入保护模式
+	lgdt [gdt_descriptor]
+	
+	mov eax,cr0
+	or eax,0x1
+	mov cr0,eax
+	
 
-    mov ds,ax
-    mov si,0
-    mov ax,kernelseg
-    mov es,ax
-    mov di,0
-    mov cx,0xffff
-    call memcpy
-    jmp dword kernelseg:0 ;跳转到kernel
+	;刷新16位保护模式的流水线和缓存
+	jmp dword CODE_SEG:inpmode
+	;jmp $
+
 print:
     mov al,[si]
     cmp al,0
@@ -80,13 +92,17 @@ print:
     jmp print
 .ret:
     ret
-memcpy:
-    mov al,[ds:si]
-    mov [es:di],al
-    inc si
-    inc di
-    loop memcpy
-.memcpyend:
-    ret
+
+[bits 32]
+inpmode:
+	mov ax, DATA_SEG
+	mov ds,ax
+	mov es,ax
+	mov ss,ax
+	;mov ax,SELECTOR_DISP
+	;mov gs,ax
+	;mov byte[gs:0x00],'s'
+	
+	jmp $
 
 

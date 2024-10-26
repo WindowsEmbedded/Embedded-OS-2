@@ -5,8 +5,7 @@ numheader equ 1  ;最大磁头
 numcylind equ 10 ;最大柱面
 bootseg equ 7c0h
 bootinfoseg equ 7e0h ;boot信息地址
-dataseg	equ			800h		; 软盘10扇区读入的地址         
-ldrseg equ 0x3500 
+dataseg	equ			800h		; 软盘10扇区读入的地址          
 
 ;  org   0x7c00            
 
