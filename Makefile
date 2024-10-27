@@ -12,18 +12,19 @@ LD = ld
 CFLAGS = -m32 -fno-builtin -fno-stack-protector -nostartfiles -I./include/
 LDFLAGS = -Ttext 0x100000 -melf_i386 -nostdlib 
 NASM = nasm
-MAKE = make 
+MAKE = make -r
 EDIMG = qemu-img
 DEL = rm
 #QEMU = $(TOOLPATH)QEMU/qemu-system-i386.exe
 QEMU = qemu-system-i386
 
 IMG = $(IMGPATH)target.img
-OBJ = $(BUILDPATH)muitlboot.o $(BUILDPATH)kernel.o
+OBJ = $(BUILDPATH)muitlboot.o $(BUILDPATH)stdio.o $(BUILDPATH)kernel.o 
 .PHONY:build clean run 
 
 default:
-	$(MAKE) $(IMG)
+	$(MAKE) -C $(KRNPATH)
+	$(MAKE) makeimg
 
 makeimg: $(IMG) $(BUILDPATH)kernel.bin Makefile
 	sudo losetup -P /dev/loop0 $(IMG)
@@ -49,12 +50,6 @@ $(IMG):$(OBJ) Makefile
 	sudo rmdir /mnt/eos
 	sudo losetup -d /dev/loop0
 
-$(BUILDPATH)kernel.bin:$(OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@
-$(BUILDPATH)muitlboot.o:$(KRNPATH)muitlboot.S Makefile
-	$(CC) -c $(CFLAGS) $< -o $@
-$(BUILDPATH)%.o:$(KRNPATH)%.c
-	$(CC) -c $(CFLAGS) $< -o $@
 build: 
 	mkdir build
 
@@ -62,8 +57,8 @@ clean:
 	sudo umount /mnt/eos || true
 	sudo rmdir /mnt/eos || true
 	sudo losetup -d /dev/loop0 || true
-	$(DEL) $(OBJ)
-	$(DEL) $(IMG)
+	$(DEL) $(BUILDPATH)*
+#	$(DEL) $(IMG)
 run:
-	$(MAKE) makeimg
+	$(MAKE) default
 	$(QEMU) -hda $(IMGPATH)target.img -m 1G
