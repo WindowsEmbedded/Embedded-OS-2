@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-CFGPATH = $1
-cat <<EOF > $CFGPATH
+CFGPATH=$1
+cat <<EOF >./build/grub.cfg
 set timeout=10
 set default=0
 menuentry "Embedded OS" {
@@ -8,3 +8,4 @@ menuentry "Embedded OS" {
     boot
 }
 EOF
+sudo cp ./build/grub.cfg ${CFGPATH}

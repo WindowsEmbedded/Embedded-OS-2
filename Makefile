@@ -7,39 +7,63 @@ KRNPATH = ./kernel/
 BUILDPATH = ./build/
 IMGPATH = ./images/
 
+CC = gcc
+LD = ld 
+CFLAGS = -m32 -fno-builtin -fno-stack-protector -nostartfiles -I./include/
+LDFLAGS = -Ttext 0x100000 -melf_i386 -nostdlib 
 NASM = nasm
-MAKE = make -r
+MAKE = make 
 EDIMG = qemu-img
 DEL = rm
 #QEMU = $(TOOLPATH)QEMU/qemu-system-i386.exe
-QEMU = qemu-system-i386.exe
+QEMU = qemu-system-i386
 
 IMG = $(IMGPATH)target.img
-OBJ = $(BUILDPATH)boot.bin $(BUILDPATH)loader.bin $(BUILDPATH)kernel.bin
+OBJ = $(BUILDPATH)muitlboot.o $(BUILDPATH)kernel.o
 .PHONY:build clean run 
 
 default:
 	$(MAKE) $(IMG)
 
-makeimg:
-	$(EDIMG) create $(IMG) 1474560
-	mformat -f 1440 -i $(IMG)
-	dd if=$(BUILDPATH)boot.bin of=$(IMG) bs=512 count=1  conv=notrunc
+makeimg: $(IMG) $(BUILDPATH)kernel.bin Makefile
+	sudo losetup -P /dev/loop0 $(IMG)
+	sudo mkdir /mnt/eos
+	sudo mount /dev/loop0p1 /mnt/eos
+	sudo ./script/writegrub.sh /mnt/eos/boot/grub/grub.cfg
+	sudo cp $(BUILDPATH)kernel.bin /mnt/eos/boot
+	sudo umount /mnt/eos
+	sudo rmdir /mnt/eos
+	sudo losetup -d /dev/loop0
+	
 
 $(IMG):$(OBJ) Makefile
-	$(MAKE) makeimg
-	mcopy -i $(IMG) $(BUILDPATH)loader.bin ::
-	mcopy -i $(IMG) $(BUILDPATH)kernel.bin ::
+	dd if=/dev/zero of=$(IMG) bs=1M count=60
+	parted -s $(IMG) mklabel msdos mkpart primary ext2 1MiB 100%
+	sudo losetup -P /dev/loop0 $(IMG)
+	sudo mkfs.ext2 /dev/loop0p1
+	sudo mkdir /mnt/eos
+	sudo mount /dev/loop0p1 /mnt/eos
+	sudo grub-install --target=i386-pc --boot-directory=/mnt/eos/boot /dev/loop0
+	sudo mkdir -p /mnt/eos/boot/grub
+	sudo umount /mnt/eos
+	sudo rmdir /mnt/eos
+	sudo losetup -d /dev/loop0
 
-$(BUILDPATH)%.bin:$(KRNPATH)%.asm Makefile
-	$(NASM) $< -o $@
-
+$(BUILDPATH)kernel.bin:$(OBJ)
+	$(LD) $(LDFLAGS) $^ -o $@
+$(BUILDPATH)muitlboot.o:$(KRNPATH)muitlboot.S Makefile
+	$(CC) -c $(CFLAGS) $< -o $@
+$(BUILDPATH)%.o:$(KRNPATH)%.c
+	$(CC) -c $(CFLAGS) $< -o $@
 build: 
 	mkdir build
 
 clean:
+	sudo umount /mnt/eos || true
+	sudo rmdir /mnt/eos || true
+	sudo losetup -d /dev/loop0 || true
 	$(DEL) $(OBJ)
 	$(DEL) $(IMG)
 run:
-	$(MAKE) $(IMG)
-	$(QEMU) -fda $(IMGPATH)target.img -m 512
+	$(MAKE) makeimg
+	$(QEMU) -hda $(IMGPATH)target.img -m 1G
