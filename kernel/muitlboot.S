@@ -38,7 +38,8 @@ entry: //main
     pushl %ebx
     pushl %eax
 
-    call EXT_C(KernelMain) 
+    call EXT_C(KernelMain)
+
 
 loop:
     hlt 
