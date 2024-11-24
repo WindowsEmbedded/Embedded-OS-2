@@ -2,11 +2,15 @@
 #define STDIO_H_
 
 #define COLUMN      80
-#define LINE        24
+#define LINE        25
 #define ATTRIBUTE   7
 #define VIDEO       0xb8000 //显存起始位置
 
-void putchar (int chr);
+#include <stdint.h>
+
+void putstr (char *str,int attr);
+//void log_info (char *str);
+void putchar (int chr,uint8_t attr);
 void itoa (char *buf, int base, int d);
 void printf (const char *format, ...);
 

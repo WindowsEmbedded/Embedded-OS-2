@@ -3,13 +3,13 @@
 #
 #Copyright (c) WindowsEmbedded 2022~2024
 TOOLPATH = ./tools/
-KRNPATH = ./kernel/
+KRNPATH = ./src/
 BUILDPATH = ./build/
 IMGPATH = ./images/
 
 CC = gcc
 LD = ld 
-CFLAGS = -m32 -fno-builtin -fno-stack-protector -nostartfiles -I./include/
+CFLAGS = -m32 -fno-builtin -fno-stack-protector -nostartfiles -I./include/ -I./include/sys/
 LDFLAGS = -Ttext 0x100000 -melf_i386 -nostdlib 
 NASM = nasm
 MAKE = make -r
@@ -61,4 +61,4 @@ clean:
 #	$(DEL) $(IMG)
 run:
 	$(MAKE) default
-	$(QEMU) -hda $(IMGPATH)target.img -m 1G
+	$(QEMU) -hda $(IMGPATH)target.img -m 1G -serial stdio
